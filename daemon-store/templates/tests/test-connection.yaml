@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "daemon-store.fullname" . }}-test-connection"
+  labels:
+    {{- include "daemon-store.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "daemon-store.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never
