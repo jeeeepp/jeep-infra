@@ -1,0 +1,161 @@
+node-master:
+  enabled: true
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+  replicas: 3
+  minimumMasterNodes: 1
+  esJavaOpts: "-Xmx1g -Xms1g"
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "1Gi"
+  nodeGroup: "master"
+  roles:
+    master: "true"
+    ingest: "true"
+    data: 'false'
+
+node-data:
+  enabled: true
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+  replicas: 1
+  minimumMasterNodes: 1
+  esJavaOpts: "-Xmx1g -Xms1g"
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "1Gi"
+  nodeGroup: "data"
+  roles:
+    master: "false"
+    ingest: "false"
+    data: 'true'
+
+node-client:
+  enabled: true
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        storage: 10Gi
+  replicas: 1
+  minimumMasterNodes: 1
+  esJavaOpts: "-Xmx1g -Xms1g"
+  resources:
+    requests:
+      cpu: "300m"
+      memory: "1Gi"
+  nodeGroup: "client"
+  roles:
+    master: "false"
+    ingest: "false"
+    data: 'false'
+
+kibana:
+  ingress:
+    enabled: true
+    className: "nginx"
+    pathtype: ImplementationSpecific
+    annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: kibana.jesus-test.ga
+        paths:
+          - path: /
+    #tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "1Gi"
+  kibanaConfig:
+    kibana.yml: |
+      server:
+        publicBaseUrl: https://kibana.jesus-test.ga
+
+
+logstash:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "1000Mi"
+  logstashPipeline:
+    logstash.conf: |
+      input {
+        beats {
+          port => 5044
+        }
+      }
+      output {
+        elasticsearch {
+          hosts => ["elasticsearch-master-headless:9200"]
+          index => "%{[@metadata][beat]}-%{[@metadata][version]}" 
+        }
+        s3{
+          access_key_id => "${ACCESS_KEY_ID}"
+          secret_access_key => "${SECRET_ACCESS_KEY}"
+          region => "ap-southeast-1"
+          bucket => "test-elastic-jeep"
+          time_file => 5
+          encoding => ["gzip"]
+        }
+      }
+  envFrom:
+  - secretRef:
+      name: aws-secret
+  ingress:
+    enabled: false
+    annotations:
+      {}
+      # kubernetes.io/tls-acme: "true"
+    className: "nginx"
+    pathtype: ImplementationSpecific
+    hosts:
+      - host: logstash-example.local
+        paths:
+          - path: /beats
+            servicePort: 5044
+          - path: /http
+            servicePort: 8080
+    tls: []
+
+  # secrets:
+  # - name: "env"
+  #   value:
+  #     ELASTICSEARCH_PASSWORD: "LS1CRUdJTiBgUFJJVkFURSB"
+  #     api_key: ui2CsdUadTiBasRJRkl9tvNnw  
+
+filebeat:
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "100Mi"     
+  filebeatConfig:
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/*.log
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+      output.logstash:
+        hosts: ["elasticsearch-logstash-headless:5044"]
+
+
+
+
+        

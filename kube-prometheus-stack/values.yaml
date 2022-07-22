@@ -1,0 +1,121 @@
+kube-prometheus-stack:
+  prometheus:
+    url: http://prometheus-monitoring-kube-prometheus
+    port: 9090
+    prometheusSpec:
+      storageSpec: 
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+  grafana:
+    enabled: true
+    ingress:
+      enabled: true
+      annotations:
+        kubernetes.io/ingress.class: nginx
+      hosts:
+        - monitoring.jesus-test.ga
+      tls: []
+
+  alertmanager:
+    enabled: true
+    ingress:
+        enabled: true
+        annotations:
+          kubernetes.io/ingress.class: nginx
+        hosts:
+          - alert.jesus-test.ga
+        tls: []
+
+    config:
+      global:
+        resolve_timeout: 5m
+        slack_api_url: https://hooks.slack.com/services/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        
+      route:
+        group_by: ['job']
+        group_wait: 30s
+        group_interval: 2m
+        repeat_interval: 1m
+        receiver: 'slack'
+        routes:
+        - match:
+            alertname: Watchdog
+          receiver: 'null'
+      receivers:
+      - name: 'null'
+      - name: 'slack'
+        slack_configs:
+        - channel: '#test-alert'
+          send_resolved: true
+          color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+          title: '{{ template "slack.default.title" . }}'
+          title_link: '{{ template "slack.default.titlelink" . }}'
+          pretext: '{{ .CommonAnnotations.message }}'
+          text: |-
+            {{ range .Alerts }}
+                *Alert:* {{ .Annotations.message }}
+              *Cluster:* 'jeep'
+              *Severity:* `{{ .Labels.severity }}`
+              *Details:*
+              {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+              {{ end }}
+            {{ end }}
+          fallback: '{{ template "slack.default.fallback" . }}'
+          icon_emoji: '{{ template "slack.default.iconemoji" . }}'
+          icon_url: '{{ template "slack.default.iconurl" . }}'
+      templates:
+      - '/etc/alertmanager/config/*.tmpl'
+
+
+prometheus-adapter:
+  prometheus:
+    # Value is templated
+    url: http://prometheus.default.svc
+    port: 9090
+    path: ""
+  rbac:
+    create: true
+  rules:
+    custom:
+    - seriesQuery: '{__name__=~"^container_.*",container!="POD",namespace!="",pod!=""}'
+      resources:
+        template: <<.Resource>>
+        overrides: 
+          namespace: {resource: "namespace"}
+          pod: {resource: "pod"}
+      name:
+        matches: "^container_(.*)_seconds_total"
+        as: "my_custom_metric"
+      metricsQuery: sum(rate(<<.Series>>{<<.LabelMatchers>>,container!="POD"}[2m])) by (<<.GroupBy>>)"
+
+
+
+    # targetMemoryUtilizationPercentage: 80
+
+    # config:
+    #   global:
+    #     resolve_timeout: 5m
+    #     slack_api_url: https://hooks.slack.com/services/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        
+    #   route:
+    #     receiver: 'slack'
+    #   receivers:
+    #   - name: 'slack'
+    #     slack_configs:
+    #     - chanel: '#testing-bot'
+        
+
+# Alerting:
+#   Alertmanager:
+#     enabled: true
+#     ingress:
+#       enabled: true
+#       annotations:
+#         kubernetes.io/ingress.class: nginx
+#       hosts:
+#         - alert.jesus-test.ga
+#       tls: []
+
+

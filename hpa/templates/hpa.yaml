@@ -1,0 +1,108 @@
+# apiVersion: autoscaling/v2beta2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: store-autoscale
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: nginx-hpa
+#   minReplicas: 1
+#   maxReplicas: 10
+#   metrics:
+#   - type: Resource
+#     resource:
+#       name: cpu
+#       target:
+#         type: Utilization
+#         averageUtilization: 50
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 10
+#       policies:
+#       - type: Percent
+#         value: 50
+#         periodSeconds: 10
+
+# ---
+
+# apiVersion: autoscaling/v2beta2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: custom-metric-autoscale
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: nginx-hpa
+#   minReplicas: 1
+#   maxReplicas: 12
+#   metrics:
+#   - type: Object
+#     object:
+#       metric:
+#         name: requests-per-second
+#       describedObject:
+#         apiVersion: networking.k8s.io/v1
+#         kind: Ingress
+#         name: nginx-hpa
+#       target:
+#         type: Value
+#         value: 0.5k
+# status:
+#   conditions:
+#     observedGeneration: 1
+#     lastScaleTime: 10
+#     currentReplicas: 1
+#     # desiredReplicas: 1
+#     currentMetrics:
+
+
+
+
+# apiVersion: autoscaling/v2beta2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#  name: hpa-demo-deployment
+# spec:
+#  scaleTargetRef:
+#    apiVersion: apps/v1
+#    kind: Deployment
+#    name: nginx-hpa
+#  minReplicas: 1
+#  maxReplicas: 10
+#  targetCPUUtilizationPercentage: 40
+#   behavior:
+#   scaleDown:
+#     policies:
+#     - type: Pods
+#       value: 1
+#       periodSeconds: 10
+#     - type: Percent
+#       value: 10
+#       periodSeconds: 10
+ 
+    #   object:
+    #     metric:
+    #       name: requests-per-second
+    #     describedObject:
+    #       apiVersion: networking.k8s.io/v1
+    #       kind: Ingress
+    #       name: main-route
+    #     target:
+    #       type: Value
+    #       value: 1k
+  # behavior:
+  #   scaleDown:
+  #     policies:
+  #     - type: Pods
+  #       value: 1
+  #       periodSeconds: 5
+  #     # - type: Percent
+  #   scaleUp:    
+  #     policies:
+  #     - type: Percent
+  #       value: 10
+  #       periodSeconds: 30
+
+# kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://nginx.jesus-test.ga/; done"

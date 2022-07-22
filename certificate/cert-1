@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: certificate-clusterissuer-1
+spec:
+  # Secret names are always required.
+  secretName: jesus-test-ga-tls-1
+
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - jeepjeep
+  # The use of the common name field has been deprecated since 2000 and is
+  # discouraged from being used.
+  commonName: jesus-test.ga
+  # At least one of a DNS Name, URI, or IP address is required.
+  dnsNames:
+    - jesus-test.ga
+    - 'build.jesus-test.ga'
+  # Issuer references are always required.
+  issuerRef:
+    kind: ClusterIssuer
+    name: encryp-prod-1
+
+

@@ -1,0 +1,9 @@
+dependencies:
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 35.0.3
+- name: prometheus-adapter
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 3.3.0
+digest: sha256:8054b4a749d55898fc6ac3a7285d5f0dcc3774e20311a52c7149934deae9aea8
+generated: "2022-05-23T14:50:38.173136+07:00"
